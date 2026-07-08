@@ -10,14 +10,14 @@ This project and everyone participating in it is governed by the [Code of Conduc
 
 ### Reporting Bugs
 
-- **Check existing issues** — search [GitHub Issues](https://github.com/yourusername/RateLimitAgent/issues) first
+- **Check existing issues** — search [GitHub Issues](https://github.com/prismaymedia/RateLimitAgent/issues) first
 - **Use a clear title** and describe the steps to reproduce
 - Include your **macOS version** and **build method** (source build / pre-built)
 - Attach **screenshots** if the bug is visual
 
 ### Suggesting Enhancements
 
-- Open a [GitHub Issue](https://github.com/yourusername/RateLimitAgent/issues/new) with the label `enhancement`
+- Open a [GitHub Issue](https://github.com/prismaymedia/RateLimitAgent/issues/new) with the label `enhancement`
 - Explain **what you want** and **why** — use cases help a lot
 - If you have a rough design or mockup, include it
 
@@ -36,7 +36,7 @@ This project and everyone participating in it is governed by the [Code of Conduc
 ### Development Setup
 
 ```bash
-git clone https://github.com/yourusername/RateLimitAgent.git
+git clone https://github.com/prismaymedia/RateLimitAgent.git
 cd RateLimitAgent
 bash create-app.sh
 open build/RateLimitAgent.app

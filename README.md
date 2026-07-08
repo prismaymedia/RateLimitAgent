@@ -2,11 +2,11 @@
   <img src="https://img.shields.io/badge/macOS-14%2B-brightgreen?logo=apple&style=flat-square" alt="macOS 14+"/>
   <img src="https://img.shields.io/badge/Swift-5.9-orange?logo=swift&style=flat-square" alt="Swift 5.9"/>
   <img src="https://img.shields.io/badge/UI-SwiftUI-blue?logo=swift&style=flat-square" alt="SwiftUI"/>
-  <img src="https://img.shields.io/github/license/yourusername/RateLimitAgent?style=flat-square" alt="MIT"/>
+  <img src="https://img.shields.io/github/license/prismaymedia/RateLimitAgent?style=flat-square" alt="MIT"/>
   <img src="https://img.shields.io/badge/contributions-welcome-brightgreen?style=flat-square" alt="Contributions Welcome"/>
   <br/>
   <img src="https://img.shields.io/badge/OpenCode-Community-8A2BE2?style=flat-square" alt="OpenCode Community"/>
-  <img src="https://img.shields.io/github/v/release/yourusername/RateLimitAgent?style=flat-square" alt="Release"/>
+  <img src="https://img.shields.io/github/v/release/prismaymedia/RateLimitAgent?style=flat-square" alt="Release"/>
   <img src="https://img.shields.io/badge/PRs-👀_welcome-8A2BE2?style=flat-square" alt="PRs Welcome"/>
 </div>
 
@@ -59,7 +59,7 @@ When you're using OpenCode's free models (`deepseek-v4-flash-free`, `nemotron-3-
 ### Option 1: Build from Source (recommended)
 
 ```bash
-git clone https://github.com/yourusername/RateLimitAgent.git
+git clone https://github.com/prismaymedia/RateLimitAgent.git
 cd RateLimitAgent
 bash create-app.sh
 open build/RateLimitAgent.app
@@ -69,7 +69,7 @@ Then add it to your **Login Items** (System Settings → General → Login Items
 
 ### Option 2: Pre-built Binary
 
-> Coming in the first [Release](https://github.com/yourusername/RateLimitAgent/releases). Download the `.app` zip, extract, and move to `/Applications`.
+> Coming in the first [Release](https://github.com/prismaymedia/RateLimitAgent/releases). Download the `.app` zip, extract, and move to `/Applications`.
 
 ### Option 3: Homebrew (future)
 
