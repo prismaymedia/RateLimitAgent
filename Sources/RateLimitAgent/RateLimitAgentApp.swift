@@ -9,13 +9,14 @@ struct RateLimitAgentApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // Hidden window — never shown, used only to keep the process alive
-            Color.clear
-                .frame(width: 0, height: 0)
-                .hidden()
+            Color.clear.frame(width: 0, height: 0).hidden()
                 .onAppear {
-                    NSApplication.shared.windows.first?.close()
-                    MenuBarController.shared.start(with: store)
+                    DispatchQueue.main.async {
+                        if let w = NSApplication.shared.windows.first {
+                            w.close()
+                        }
+                        MenuBarController.shared.start(with: store)
+                    }
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -23,7 +24,7 @@ struct RateLimitAgentApp: App {
     }
 }
 
-// MARK: - Menu Bar Controller (NSStatusItem)
+// MARK: - Menu Bar Controller
 
 @MainActor
 final class MenuBarController: NSObject {
@@ -32,7 +33,7 @@ final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private weak var store: RateLimitStore?
-    private var ticker: Timer?
+    private var observationTask: Task<Void, Never>?
 
     private override init() {}
 
@@ -42,43 +43,52 @@ final class MenuBarController: NSObject {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.statusItem = item
 
-        if let button = item.button {
-            let hostingView = NSHostingView(
-                rootView: MenuBarLabel(store: store)
-                    .environment(store)
-            )
-            hostingView.setContentHuggingPriority(.required, for: .horizontal)
-            hostingView.setContentHuggingPriority(.required, for: .vertical)
-            hostingView.translatesAutoresizingMaskIntoConstraints = false
+        guard let button = item.button else { return }
+        button.action = #selector(togglePopover)
+        button.target = self
 
-            // Add to button with proper layout
-            button.addSubview(hostingView)
-            NSLayoutConstraint.activate([
-                hostingView.leadingAnchor.constraint(equalTo: button.leadingAnchor, constant: 4),
-                hostingView.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -4),
-                hostingView.topAnchor.constraint(equalTo: button.topAnchor),
-                hostingView.bottomAnchor.constraint(equalTo: button.bottomAnchor),
-            ])
+        // Render initial image
+        updateImage()
 
-            // Use button action for click
-            button.action = #selector(togglePopover)
-            button.target = self
+        // Watch for store changes
+        observationTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+                await MainActor.run { self?.updateImage() }
+            }
         }
 
         // Create popover
         let popover = NSPopover()
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
-            rootView: ContentView()
-                .environment(store)
-                .frame(width: 296)
+            rootView: ContentView().environment(store).frame(width: 296)
         )
         self.popover = popover
     }
 
+    deinit {
+        observationTask?.cancel()
+    }
+
+    private func updateImage() {
+        guard let store = store else { return }
+
+        let labelView = MenuBarLabel(store: store).environment(store)
+        let renderer = ImageRenderer(content: labelView)
+        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2.0
+
+        guard let image = renderer.nsImage else { return }
+
+        // Set as button image — using `isTemplate = false` preserves colors
+        let statusImage = image
+        statusImage.isTemplate = false
+        statusItem?.button?.image = statusImage
+        statusItem?.button?.imagePosition = .imageOnly
+    }
+
     @objc private func togglePopover() {
         guard let button = statusItem?.button else { return }
-
         if popover?.isShown == true {
             popover?.performClose(nil)
         } else {
@@ -96,7 +106,7 @@ struct MenuBarLabel: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: iconName)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(foregroundColor)
 
             if case .countdown(let seconds) = store.state {
@@ -106,6 +116,8 @@ struct MenuBarLabel: View {
                     .monospacedDigit()
             }
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
     }
 
     private var iconName: String {
@@ -128,9 +140,7 @@ struct MenuBarLabel: View {
     }
 
     func formattedTime(_ s: Int) -> String {
-        let h = s / 3600
-        let m = (s % 3600) / 60
-        let sec = s % 60
+        let h = s / 3600; let m = (s % 3600) / 60; let sec = s % 60
         if h > 0 { return String(format: "%d:%02d:%02d", h, m, sec) }
         return String(format: "%02d:%02d", m, sec)
     }
@@ -146,57 +156,39 @@ struct ContentView: View {
         VStack(spacing: 0) {
             header
             Divider().overlay(.separator.opacity(0.3))
-
             VStack(spacing: 12) {
                 modelRow
                 statusRow
                 stateSection
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 16).padding(.vertical, 12)
             .onReceive(ticker) { _ in
                 if case .countdown = store.state { store.decrementCountdown() }
             }
-
             Divider().overlay(.separator.opacity(0.3))
             footer
         }
     }
 
-    // MARK: Header
-
     private var header: some View {
         HStack(spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(LinearGradient(
-                        colors: [.pink, Color(red: 0.76, green: 0.19, blue: 0.32)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
+                    .fill(LinearGradient(colors: [.pink, Color(red: 0.76, green: 0.19, blue: 0.32)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(width: 24, height: 24)
-                Text("OC")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.white)
+                Text("OC").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
             }
-
-            Text("OpenCode Free Models")
-                .font(.system(size: 13, weight: .semibold))
-
+            Text("OpenCode Free Models").font(.system(size: 13, weight: .semibold))
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 16).padding(.vertical, 14)
     }
-
-    // MARK: Rows
 
     private var modelRow: some View {
         HStack {
             Text("Model").font(.system(size: 11)).foregroundStyle(.secondary)
             Spacer()
-            Text(store.modelName)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+            Text(store.modelName).font(.system(size: 11, weight: .medium, design: .monospaced))
         }
     }
 
@@ -208,8 +200,6 @@ struct ContentView: View {
         }
     }
 
-    // MARK: State
-
     @ViewBuilder
     private var stateSection: some View {
         switch store.state {
@@ -219,8 +209,7 @@ struct ContentView: View {
         case .available:
             availableCard
         case .checking:
-            HStack { Spacer(); ProgressView().controlSize(.small); Spacer() }
-                .padding(.vertical, 12)
+            HStack { Spacer(); ProgressView().controlSize(.small); Spacer() }.padding(.vertical, 12)
         case .error(let message):
             errorCard(message: message)
         case .unknown:
@@ -235,46 +224,23 @@ struct ContentView: View {
                 Spacer()
                 Text(formattedCD(seconds))
                     .font(.system(size: 21, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.orange)
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
+                    .foregroundStyle(.orange).monospacedDigit().contentTransition(.numericText())
             }
-
             ProgressView(value: progress)
-                .tint(LinearGradient(
-                    colors: [Color(red: 0.91, green: 0.27, blue: 0.38), Color(red: 1.0, green: 0.42, blue: 0.51)],
-                    startPoint: .leading, endPoint: .trailing
-                ))
+                .tint(LinearGradient(colors: [Color(red: 0.91, green: 0.27, blue: 0.38), Color(red: 1.0, green: 0.42, blue: 0.51)], startPoint: .leading, endPoint: .trailing))
                 .scaleEffect(x: 1, y: 1.2, anchor: .center)
-
-            Text(resetAtText)
-                .font(.system(size: 9)).foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(resetAtText).font(.system(size: 9)).foregroundStyle(.tertiary).frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.orange.opacity(0.06))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange.opacity(0.1), lineWidth: 1))
-        )
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.orange.opacity(0.06)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange.opacity(0.1), lineWidth: 1)))
     }
 
     private var checkNowButton: some View {
-        Button {
-            Task { await store.checkNow() }
-        } label: {
-            Text("⟳ Check Now")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.orange)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.orange.opacity(0.08))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.orange.opacity(0.18), lineWidth: 1))
-                )
-        }
-        .buttonStyle(.plain)
+        Button { Task { await store.checkNow() } } label: {
+            Text("⟳ Check Now").font(.system(size: 12, weight: .semibold)).foregroundStyle(.orange)
+                .frame(maxWidth: .infinity).padding(.vertical, 8)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.08)).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.orange.opacity(0.18), lineWidth: 1)))
+        }.buttonStyle(.plain)
     }
 
     private var availableCard: some View {
@@ -283,44 +249,27 @@ struct ContentView: View {
             Text("Free model is available").font(.system(size: 12, weight: .medium)).foregroundStyle(.green)
             Text("No rate limit detected").font(.system(size: 10)).foregroundStyle(.tertiary)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.green.opacity(0.05))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.green.opacity(0.1), lineWidth: 1))
-        )
+        .frame(maxWidth: .infinity).padding(.vertical, 16)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color.green.opacity(0.05)).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.green.opacity(0.1), lineWidth: 1)))
     }
 
     private func errorCard(message: String) -> some View {
         VStack(spacing: 8) {
-            Label(message, systemImage: "exclamationmark.triangle")
-                .font(.system(size: 11)).foregroundStyle(.orange).multilineTextAlignment(.center)
+            Label(message, systemImage: "exclamationmark.triangle").font(.system(size: 11)).foregroundStyle(.orange).multilineTextAlignment(.center)
             Button("Retry") { Task { await store.checkNow() } }
-                .buttonStyle(.plain)
-                .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange)
+                .buttonStyle(.plain).font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange)
                 .padding(.horizontal, 16).padding(.vertical, 6)
                 .background(RoundedRectangle(cornerRadius: 6).stroke(Color.orange.opacity(0.3), lineWidth: 1))
-        }
-        .padding(.vertical, 8)
+        }.padding(.vertical, 8)
     }
-
-    // MARK: Footer
 
     private var footer: some View {
         HStack {
-            Text("Last check: \(store.lastCheckText)")
-                .font(.system(size: 9)).foregroundStyle(.tertiary)
+            Text("Last check: \(store.lastCheckText)").font(.system(size: 9)).foregroundStyle(.tertiary)
             Spacer()
-            Button("Quit") { NSApplication.shared.terminate(nil) }
-                .buttonStyle(.plain)
-                .font(.system(size: 9)).foregroundStyle(.tertiary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+            Button("Quit") { NSApplication.shared.terminate(nil) }.buttonStyle(.plain).font(.system(size: 9)).foregroundStyle(.tertiary)
+        }.padding(.horizontal, 16).padding(.vertical, 10)
     }
-
-    // MARK: Helpers
 
     private var progress: Double {
         guard store.lastRetryAfter > 0 else { return 0 }
@@ -350,10 +299,7 @@ struct StatusBadge: View {
             Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
         }
         .padding(.horizontal, 8).padding(.vertical, 3)
-        .background(
-            Capsule().fill(color.opacity(0.1))
-                .overlay(Capsule().stroke(color.opacity(0.15), lineWidth: 1))
-        )
+        .background(Capsule().fill(color.opacity(0.1)).overlay(Capsule().stroke(color.opacity(0.15), lineWidth: 1)))
     }
 
     private var label: String {
