@@ -12,9 +12,7 @@ struct RateLimitAgentApp: App {
             Color.clear.frame(width: 0, height: 0).hidden()
                 .onAppear {
                     DispatchQueue.main.async {
-                        if let w = NSApplication.shared.windows.first {
-                            w.close()
-                        }
+                        NSApplication.shared.windows.first?.close()
                         MenuBarController.shared.start(with: store)
                     }
                 }
@@ -33,7 +31,7 @@ final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private weak var store: RateLimitStore?
-    private var observationTask: Task<Void, Never>?
+    private var updateTask: Task<Void, Never>?
 
     private override init() {}
 
@@ -42,23 +40,19 @@ final class MenuBarController: NSObject {
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.statusItem = item
+        item.button?.action = #selector(togglePopover)
+        item.button?.target = self
 
-        guard let button = item.button else { return }
-        button.action = #selector(togglePopover)
-        button.target = self
+        renderImage()
 
-        // Render initial image
-        updateImage()
-
-        // Watch for store changes
-        observationTask = Task { [weak self] in
+        // Poll for updates every 0.5s
+        updateTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
-                await MainActor.run { self?.updateImage() }
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                await MainActor.run { self?.renderImage() }
             }
         }
 
-        // Create popover
         let popover = NSPopover()
         popover.behavior = .transient
         popover.contentViewController = NSHostingController(
@@ -67,24 +61,92 @@ final class MenuBarController: NSObject {
         self.popover = popover
     }
 
-    deinit {
-        observationTask?.cancel()
-    }
+    deinit { updateTask?.cancel() }
 
-    private func updateImage() {
-        guard let store = store else { return }
+    private func renderImage() {
+        guard let store = store, let button = statusItem?.button else { return }
 
-        let labelView = MenuBarLabel(store: store).environment(store)
-        let renderer = ImageRenderer(content: labelView)
-        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2.0
+        let seconds = if case .countdown(let s) = store.state { s } else { 0 }
+        let showText = seconds > 0
 
-        guard let image = renderer.nsImage else { return }
+        // Choose a single color for the entire status item
+        let color: NSColor = {
+            switch store.state {
+            case .countdown: return NSColor(calibratedRed: 0.91, green: 0.27, blue: 0.38, alpha: 1) // orange-red
+            case .available: return .systemGreen
+            case .error:     return .systemOrange
+            default:         return .labelColor
+            }
+        }()
 
-        // Set as button image — using `isTemplate = false` preserves colors
-        let statusImage = image
-        statusImage.isTemplate = false
-        statusItem?.button?.image = statusImage
-        statusItem?.button?.imagePosition = .imageOnly
+        let iconName: String = {
+            switch store.state {
+            case .checking:  return "antenna.radiowaves.left.and.right"
+            case .available: return "checkmark.circle.fill"
+            case .unknown:   return "questionmark.circle"
+            case .countdown: return "brain"
+            case .error:     return "exclamationmark.triangle.fill"
+            }
+        }()
+
+        // Build attributed string with ALL content
+        let attr = NSMutableAttributedString()
+
+        // Append a space for padding
+        attr.append(NSAttributedString(string: " "))
+
+        // Icon: use the symbol as a template image, colored via attributed string foreground
+        if let symbolImg = NSImage(systemSymbolName: iconName, accessibilityDescription: nil) {
+            // Get a colored version by drawing the symbol filled with the color
+            let iconSize = NSSize(width: 14, height: 14)
+            let coloredIcon = NSImage(size: iconSize)
+            coloredIcon.lockFocus()
+            color.set()
+            let iconRect = NSRect(origin: .zero, size: iconSize)
+            symbolImg.draw(in: iconRect, from: .zero, operation: .sourceOver, fraction: 1.0)
+            coloredIcon.unlockFocus()
+            coloredIcon.isTemplate = false
+
+            let attach = NSTextAttachment()
+            attach.image = coloredIcon
+            attach.bounds = CGRect(x: 0, y: -2, width: 14, height: 14)
+            attr.append(NSAttributedString(attachment: attach))
+        }
+
+        if showText {
+            attr.append(NSAttributedString(
+                string: " \(formattedTime(seconds))",
+                attributes: [
+                    .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .semibold),
+                    .foregroundColor: color
+                ]
+            ))
+        }
+
+        // Center and pad
+        let para = NSMutableParagraphStyle()
+        para.alignment = .center
+        attr.addAttribute(.paragraphStyle, value: para, range: NSRange(location: 0, length: attr.length))
+
+        // Render to bitmap
+        let textSize = attr.size()
+        let renderW = max(textSize.width + 12, 24)
+        let renderH = max(textSize.height + 6, 22)
+
+        let image = NSImage(size: NSSize(width: renderW, height: renderH))
+        image.lockFocus()
+        // Clear background (transparent)
+        NSColor.clear.set()
+        NSRect(origin: .zero, size: image.size).fill()
+        // Draw text
+        let drawY = (renderH - textSize.height) / 2.0
+        attr.draw(in: CGRect(x: 4, y: drawY + 1, width: textSize.width, height: textSize.height))
+        image.unlockFocus()
+
+        image.isTemplate = false
+
+        button.image = image
+        button.imagePosition = .imageOnly
     }
 
     @objc private func togglePopover() {
@@ -96,50 +158,8 @@ final class MenuBarController: NSObject {
             popover?.contentViewController?.view.window?.makeKey()
         }
     }
-}
 
-// MARK: - Menu Bar Label
-
-struct MenuBarLabel: View {
-    let store: RateLimitStore
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: iconName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(foregroundColor)
-
-            if case .countdown(let seconds) = store.state {
-                Text(formattedTime(seconds))
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(foregroundColor)
-                    .monospacedDigit()
-            }
-        }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 2)
-    }
-
-    private var iconName: String {
-        switch store.state {
-        case .checking:  return "antenna.radiowaves.left.and.right"
-        case .available: return "checkmark.circle.fill"
-        case .unknown:   return "questionmark.circle"
-        case .countdown: return "timer"
-        case .error:     return "exclamationmark.triangle.fill"
-        }
-    }
-
-    private var foregroundColor: Color {
-        switch store.state {
-        case .countdown: return .orange
-        case .available: return .green
-        case .error:     return .orange
-        case .checking, .unknown: return .primary
-        }
-    }
-
-    func formattedTime(_ s: Int) -> String {
+    private func formattedTime(_ s: Int) -> String {
         let h = s / 3600; let m = (s % 3600) / 60; let sec = s % 60
         if h > 0 { return String(format: "%d:%02d:%02d", h, m, sec) }
         return String(format: "%02d:%02d", m, sec)
