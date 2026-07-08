@@ -202,7 +202,7 @@ This project is made for the [OpenCode](https://opencode.ai) community. OpenCode
 
 ## License
 
-[MIT](LICENSE) © 2026 Jonathan Lozano
+[MIT](LICENSE) © 2026 Jonathan Escobar
 
 ---
 
