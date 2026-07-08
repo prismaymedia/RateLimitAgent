@@ -1,0 +1,30 @@
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+*.xcuserdata/
+
+# SwiftPM
+.build/
+.build-arm/
+.build-x86_64/
+Packages/
+*.swiftmodule
+
+# Build output
+build/*.app
+build/*.dSYM
+
+# macOS
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Temporary
+/tmp/
