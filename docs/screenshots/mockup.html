@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RateLimitAgent Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    padding: 40px;
+    gap: 60px;
+  }
+
+  /* === SCREEN 1: Menu bar === */
+  .screen-container {
+    background: #0d0d1a;
+    border-radius: 20px;
+    padding: 24px 24px 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    position: relative;
+  }
+
+  .screen-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(233,69,96,0.3), transparent);
+  }
+
+  .menubar {
+    background: rgba(30, 30, 50, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 10px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    width: 600px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .menubar-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .apple-logo {
+    color: rgba(255,255,255,0.85);
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .menu-item {
+    color: rgba(255,255,255,0.65);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .menu-item.bold {
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
+  }
+
+  .menubar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .menubar-icon {
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(233,69,96,0.15);
+    padding: 2px 8px 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(233,69,96,0.2);
+  }
+
+  .status-icon {
+    font-size: 11px;
+  }
+
+  .countdown-text {
+    color: #e94560;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+  }
+
+  .clock {
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+  }
+
+  .battery {
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+  }
+
+  .divider {
+    width: 1px;
+    height: 14px;
+    background: rgba(255,255,255,0.12);
+  }
+
+  /* === SCREEN 2: Popover === */
+  .popover {
+    background: rgba(35, 35, 55, 0.97);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    width: 300px;
+    overflow: hidden;
+    margin-top: -8px;
+  }
+
+  .popover-header {
+    padding: 16px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .popover-header h2 {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .popover-header-icon {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #e94560, #c23152);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+  }
+
+  .popover-body {
+    padding: 0 16px 16px;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+  }
+
+  .info-label {
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .info-value {
+    color: rgba(255,255,255,0.85);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge-rate-limited {
+    background: rgba(233,69,96,0.15);
+    color: #e94560;
+    border: 1px solid rgba(233,69,96,0.2);
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #e94560;
+  }
+
+  .countdown-section {
+    background: rgba(233,69,96,0.06);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    border: 1px solid rgba(233,69,96,0.1);
+  }
+
+  .countdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .countdown-label {
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+  }
+
+  .countdown-big {
+    color: #e94560;
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+  }
+
+  .progress-bar-bg {
+    height: 4px;
+    background: rgba(233,69,96,0.15);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 65%;
+    background: linear-gradient(90deg, #e94560, #ff6b81);
+    border-radius: 2px;
+  }
+
+  .reset-time {
+    color: rgba(255,255,255,0.35);
+    font-size: 10px;
+    margin-top: 6px;
+  }
+
+  .btn-check {
+    width: 100%;
+    padding: 8px;
+    margin-top: 12px;
+    background: rgba(233,69,96,0.12);
+    border: 1px solid rgba(233,69,96,0.2);
+    border-radius: 8px;
+    color: #e94560;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-check:hover {
+    background: rgba(233,69,96,0.2);
+  }
+
+  .popover-footer {
+    padding: 10px 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-text {
+    color: rgba(255,255,255,0.3);
+    font-size: 10px;
+  }
+
+  .btn-quit {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.3);
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .btn-quit:hover {
+    color: rgba(255,255,255,0.6);
+  }
+
+  .label { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+  .label-text { color: rgba(255,255,255,0.3); font-size: 11px; }
+  .label-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+
+  /* Pointer arrow */
+  .arrow-up {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid rgba(35, 35, 55, 0.97);
+    margin: 0 auto;
+  }
+
+  .mockup-label {
+    color: rgba(255,255,255,0.2);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: Menu Bar -->
+<div>
+  <div class="mockup-label">Menu Bar — Default View</div>
+  <div class="screen-container">
+    <div class="menubar">
+      <div class="menubar-left">
+        <span class="apple-logo"></span>
+        <span class="menu-item bold">Finder</span>
+        <span class="menu-item">File</span>
+        <span class="menu-item">Edit</span>
+        <span class="menu-item">View</span>
+        <span class="menu-item">Go</span>
+      </div>
+      <div class="menubar-right">
+        <span class="status-item">
+          <span class="status-icon">⏱</span>
+          <span class="countdown-text">01:54:47</span>
+        </span>
+        <span class="clock">Wed Jul 8</span>
+        <span class="clock">10:41 PM</span>
+        <div class="divider"></div>
+        <span class="battery">🔋 87%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: Popover Open -->
+<div>
+  <div class="mockup-label">Popover — Click to Open</div>
+  <div class="screen-container" style="display: flex; flex-direction: column; align-items: flex-end; padding-right: 40px;">
+    <div class="menubar" style="width: 600px;">
+      <div class="menubar-left">
+        <span class="apple-logo"></span>
+        <span class="menu-item bold">Finder</span>
+        <span class="menu-item">File</span>
+        <span class="menu-item">Edit</span>
+        <span class="menu-item">View</span>
+        <span class="menu-item">Go</span>
+      </div>
+      <div class="menubar-right">
+        <span class="status-item" style="background: rgba(233,69,96,0.25); border-color: rgba(233,69,96,0.4);">
+          <span class="status-icon">⏱</span>
+          <span class="countdown-text">01:54:47</span>
+        </span>
+        <span class="clock">Wed Jul 8</span>
+        <span class="clock">10:41 PM</span>
+        <div class="divider"></div>
+        <span class="battery">🔋 87%</span>
+      </div>
+    </div>
+    <div class="arrow-up"></div>
+    <div class="popover">
+      <div class="popover-header">
+        <div class="popover-header-icon">
+          <span style="color: #fff;">OC</span>
+        </div>
+        <div style="flex: 1;">
+          <h2>OpenCode Free Models</h2>
+        </div>
+      </div>
+      <div class="popover-body">
+        <div class="info-row">
+          <span class="info-label">Model</span>
+          <span class="info-value">deepseek-v4-flash-free</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Status</span>
+          <span class="badge badge-rate-limited">
+            <span class="badge-dot"></span>
+            Rate Limited
+          </span>
+        </div>
+
+        <div class="countdown-section">
+          <div class="countdown-row">
+            <span class="countdown-label">Resets in</span>
+            <span class="countdown-big">01:54:47</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill"></div>
+          </div>
+          <div class="reset-time">Rate limit resets at 12:36 AM</div>
+        </div>
+
+        <button class="btn-check">⟳ Check Now</button>
+      </div>
+      <div class="popover-footer">
+        <span class="footer-text">Last check: 2 min ago</span>
+        <button class="btn-quit">Quit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

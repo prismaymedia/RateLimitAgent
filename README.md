@@ -25,7 +25,11 @@ When you're using OpenCode's free models (`deepseek-v4-flash-free`, `nemotron-3-
 
 **RateLimitAgent** lives in your macOS menu bar and shows a live countdown so you always know exactly when you can use the free models again.
 
-![Menu bar screenshot placeholder](https://img.shields.io/badge/screenshot-coming_soon-lightgrey?style=social)
+<p align="center">
+  <img src="docs/screenshots/popover.png" alt="RateLimitAgent Popover" width="480"/>
+  <br/>
+  <em>The menu bar countdown (left) and the popover with full details (right)</em>
+</p>
 
 ---
 
