@@ -3,127 +3,105 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RateLimitAgent Mockup</title>
+<title>RateLimitAgent</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   body {
-    background: #1a1a2e;
+    background: #0d0d1a;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
     font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
-    gap: 60px;
-    padding: 40px;
+    padding: 32px;
   }
 
-  /* === Each view: centered column with menubar + optional popover === */
-  .view {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  .container {
+    background: #0d0d1a;
+    border-radius: 20px;
+    padding: 32px 40px 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.06);
   }
 
-  .view-label {
-    color: rgba(255,255,255,0.2);
+  .mockup-label {
+    color: rgba(255,255,255,0.15);
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 16px;
+    letter-spacing: 2.5px;
+    text-align: center;
+    margin-bottom: 24px;
   }
 
-  .screen-container {
-    background: #0d0d1a;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-    position: relative;
+  .row {
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
   }
 
-  .screen-container::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(233,69,96,0.3), transparent);
+  .col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .col-label {
+    color: rgba(255,255,255,0.25);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-align: center;
   }
 
   .menubar {
     background: rgba(30, 30, 50, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-radius: 10px;
     height: 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
-    width: 520px;
+    width: 440px;
     border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
   }
 
-  .menubar-left {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
+  .menubar-left { display: flex; align-items: center; gap: 18px; }
+  .apple-logo { color: rgba(255,255,255,0.85); font-size: 14px; font-weight: 500; }
+  .menu-item { color: rgba(255,255,255,0.65); font-size: 12px; font-weight: 500; }
+  .menu-item.bold { color: rgba(255,255,255,0.9); font-weight: 600; }
 
-  .apple-logo {
-    color: rgba(255,255,255,0.85);
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .menu-item {
-    color: rgba(255,255,255,0.65);
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .menu-item.bold {
-    color: rgba(255,255,255,0.9);
-    font-weight: 600;
-  }
-
-  .menubar-right {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
+  .menubar-right { display: flex; align-items: center; gap: 12px; }
 
   .status-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     background: rgba(233,69,96,0.15);
-    padding: 2px 8px 2px 6px;
+    padding: 2px 10px 2px 6px;
     border-radius: 4px;
     border: 1px solid rgba(233,69,96,0.2);
   }
-
-  .status-item.active {
-    background: rgba(52,211,153,0.12);
-    border-color: rgba(52,211,153,0.2);
-  }
-
-  .status-icon { font-size: 11px; }
   .countdown-text {
     color: #e94560;
     font-size: 11px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.5px;
   }
-
-  .checkmark { color: #34d399; font-size: 12px; font-weight: 700; }
-
-  .clock { color: rgba(255,255,255,0.6); font-size: 11px; }
+  .clock { color: rgba(255,255,255,0.5); font-size: 11px; }
   .divider { width: 1px; height: 14px; background: rgba(255,255,255,0.12); }
-  .battery { color: rgba(255,255,255,0.6); font-size: 12px; }
+  .battery { color: rgba(255,255,255,0.5); font-size: 11px; }
 
-  /* === Popover === */
+  .status-item.available {
+    background: rgba(52,211,153,0.12);
+    border-color: rgba(52,211,153,0.25);
+  }
+  .checkmark { color: #34d399; font-size: 11px; font-weight: 700; }
+
+  /* Popover */
   .arrow-up {
     width: 0; height: 0;
     border-left: 8px solid transparent;
@@ -134,7 +112,6 @@
   .popover {
     background: rgba(35, 35, 55, 0.97);
     backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
     border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 20px 60px rgba(0,0,0,0.6);
@@ -149,12 +126,6 @@
     gap: 10px;
   }
 
-  .popover-header h2 {
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-  }
-
   .popover-header-icon {
     width: 24px; height: 24px;
     background: linear-gradient(135deg, #e94560, #c23152);
@@ -166,6 +137,8 @@
     font-size: 12px;
     font-weight: 700;
   }
+
+  .popover-header h2 { color: #fff; font-size: 14px; font-weight: 600; }
 
   .popover-body { padding: 0 16px 16px; }
 
@@ -195,15 +168,7 @@
     border: 1px solid rgba(233,69,96,0.2);
   }
 
-  .badge-available {
-    background: rgba(52,211,153,0.12);
-    color: #34d399;
-    border: 1px solid rgba(52,211,153,0.2);
-  }
-
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
-  .badge-dot.red { background: #e94560; }
-  .badge-dot.green { background: #34d399; }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #e94560; }
 
   .countdown-section {
     background: rgba(233,69,96,0.06);
@@ -213,12 +178,7 @@
     border: 1px solid rgba(233,69,96,0.1);
   }
 
-  .countdown-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
+  .countdown-row { display: flex; justify-content: space-between; align-items: center; }
   .countdown-label { color: rgba(255,255,255,0.5); font-size: 12px; }
 
   .countdown-big {
@@ -226,7 +186,6 @@
     font-size: 22px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 1px;
   }
 
   .progress-bar-bg {
@@ -238,124 +197,78 @@
   }
 
   .progress-bar-fill {
-    height: 100%;
-    width: 65%;
+    height: 100%; width: 65%;
     background: linear-gradient(90deg, #e94560, #ff6b81);
     border-radius: 2px;
   }
 
-  .reset-time {
-    color: rgba(255,255,255,0.35);
-    font-size: 10px;
-    margin-top: 6px;
-  }
+  .reset-time { color: rgba(255,255,255,0.35); font-size: 10px; margin-top: 6px; }
 
   .btn-check {
-    width: 100%;
-    padding: 8px;
-    margin-top: 12px;
+    width: 100%; padding: 8px; margin-top: 12px;
     background: rgba(233,69,96,0.12);
     border: 1px solid rgba(233,69,96,0.2);
-    border-radius: 8px;
-    color: #e94560;
-    font-size: 12px;
-    font-weight: 600;
+    border-radius: 8px; color: #e94560;
+    font-size: 12px; font-weight: 600;
     cursor: pointer;
-  }
-
-  .available-section {
-    background: rgba(52,211,153,0.06);
-    border-radius: 10px;
-    padding: 16px 14px;
-    margin-top: 8px;
-    border: 1px solid rgba(52,211,153,0.1);
-    text-align: center;
-  }
-
-  .available-text {
-    color: #34d399;
-    font-size: 13px;
-    font-weight: 500;
-  }
-
-  .available-sub {
-    color: rgba(255,255,255,0.35);
-    font-size: 11px;
-    margin-top: 4px;
   }
 
   .popover-footer {
     padding: 10px 16px;
     border-top: 1px solid rgba(255,255,255,0.06);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between;
   }
 
   .footer-text { color: rgba(255,255,255,0.3); font-size: 10px; }
-  .btn-quit {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.3);
-    font-size: 10px;
-    cursor: pointer;
-  }
-  .btn-quit:hover { color: rgba(255,255,255,0.6); }
+  .quit-link { color: rgba(255,255,255,0.3); font-size: 10px; text-decoration: none; }
+  .quit-link:hover { color: rgba(255,255,255,0.6); }
 </style>
 </head>
 <body>
-
-<!-- VIEW 1: Menu bar (rate limited) -->
-<div class="view">
-  <div class="view-label">Rate Limited</div>
-  <div class="screen-container">
-    <div class="menubar">
-      <div class="menubar-left">
-        <span class="apple-logo"></span>
-        <span class="menu-item bold">Finder</span>
-        <span class="menu-item">File</span>
-        <span class="menu-item">Edit</span>
-        <span class="menu-item">View</span>
-      </div>
-      <div class="menubar-right">
-        <span class="status-item">
-          <span class="status-icon">⏱</span>
-          <span class="countdown-text">01:54:47</span>
-        </span>
-        <span class="clock">10:41 PM</span>
-        <div class="divider"></div>
-        <span class="battery">🔋 87%</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- VIEW 2: Popover (rate limited, expanded) -->
-<div class="view">
-  <div class="view-label">Click for Details</div>
-  <div class="screen-container" style="padding-bottom: 0;">
-    <div class="menubar">
-      <div class="menubar-left">
-        <span class="apple-logo"></span>
-        <span class="menu-item bold">Finder</span>
-        <span class="menu-item">File</span>
-        <span class="menu-item">Edit</span>
-        <span class="menu-item">View</span>
-      </div>
-      <div class="menubar-right">
-        <span class="status-item" style="background: rgba(233,69,96,0.25); border-color: rgba(233,69,96,0.4);">
-          <span class="status-icon">⏱</span>
-          <span class="countdown-text">01:54:47</span>
-        </span>
-        <span class="clock">10:41 PM</span>
-        <div class="divider"></div>
-        <span class="battery">🔋 87%</span>
+<div class="container">
+  <div class="mockup-label">RateLimitAgent · macOS Menu Bar</div>
+  <div class="row">
+    <!-- LEFT: Menu bar only -->
+    <div class="col">
+      <div class="col-label">Menu Bar</div>
+      <div class="menubar">
+        <div class="menubar-left">
+          <span class="apple-logo"></span>
+          <span class="menu-item bold">Finder</span>
+          <span class="menu-item">File</span>
+          <span class="menu-item">Edit</span>
+          <span class="menu-item">View</span>
+        </div>
+        <div class="menubar-right">
+          <span class="status-item">
+            <span class="checkmark">⏱</span>
+            <span class="countdown-text">01:54:47</span>
+          </span>
+          <span class="clock">10:41 PM</span>
+          <div class="divider"></div>
+          <span class="battery">🔋 87%</span>
+        </div>
       </div>
     </div>
 
-    <div style="display:flex;flex-direction:column;align-items:center;padding:4px 0 0;">
+    <!-- RIGHT: Popover -->
+    <div class="col">
+      <div class="col-label">Click to Open</div>
+      <div class="menubar" style="width:280px;">
+        <div class="menubar-left">
+          <span class="apple-logo"></span>
+          <span class="menu-item bold">Finder</span>
+          <span class="menu-item">File</span>
+        </div>
+        <div class="menubar-right">
+          <span class="status-item" style="background:rgba(233,69,96,0.25);border-color:rgba(233,69,96,0.4);">
+            <span class="checkmark">⏱</span>
+            <span class="countdown-text">01:54:47</span>
+          </span>
+        </div>
+      </div>
       <div class="arrow-up"></div>
-      <div class="popover" style="width: 280px;">
+      <div class="popover">
         <div class="popover-header">
           <div class="popover-header-icon">OC</div>
           <h2>OpenCode Free Models</h2>
@@ -368,7 +281,7 @@
           <div class="info-row">
             <span class="info-label">Status</span>
             <span class="badge badge-rate-limited">
-              <span class="badge-dot red"></span>
+              <span class="badge-dot"></span>
               Rate Limited
             </span>
           </div>
@@ -386,12 +299,11 @@
         </div>
         <div class="popover-footer">
           <span class="footer-text">Last check: 2 min ago</span>
-          <button class="btn-quit">Quit</button>
+          <a href="#" class="quit-link">Quit</a>
         </div>
       </div>
     </div>
   </div>
 </div>
-
 </body>
 </html>

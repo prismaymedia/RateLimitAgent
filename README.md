@@ -26,9 +26,9 @@ When you're using OpenCode's free models (`deepseek-v4-flash-free`, `nemotron-3-
 **RateLimitAgent** lives in your macOS menu bar and shows a live countdown so you always know exactly when you can use the free models again.
 
 <p align="center">
-  <img src="docs/screenshots/composite.png" alt="RateLimitAgent — menu bar countdown and popover details" width="720"/>
+  <img src="docs/screenshots/hero.png" alt="RateLimitAgent — macOS menu bar countdown and popover details" width="100%"/>
   <br/>
-  <sub>Menu bar countdown (left) · Popover with full details (right)</sub>
+  <sub>Live countdown in the menu bar · Click for full details, progress bar, and exact reset time</sub>
 </p>
 
 ---
